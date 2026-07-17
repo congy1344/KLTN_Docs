@@ -17,7 +17,7 @@ AI QA Agent là **trái tim** của hệ thống. Nó nhận dữ liệu đã đ
 │                                                 │
 │  ┌─────────────────────────────────────────┐    │
 │  │       LLMClient                         │    │
-│  │  Gọi OpenAI / Anthropic API             │    │
+│  │  Gọi OpenAI / Google Gemini API         │    │
 │  │  Retry, timeout, token counting         │    │
 │  └─────────────────────────────────────────┘    │
 │                                                 │
@@ -35,7 +35,7 @@ AI QA Agent là **trái tim** của hệ thống. Nó nhận dữ liệu đã đ
 **Mục đích:** AI đọc source code và tự đề xuất Business Rule cho từng Service method khi user chọn chế độ "AI auto sinh BR".
 
 **Input:**
-- Danh sách Service class và method (đã có từ Static Analysis)
+- Danh sách Service class và method chưa có Business Rule (đã có từ Static Analysis)
 - Source code của các method quan trọng
 - Existing tests liên quan nếu đã có, dùng để tránh đề xuất rule/test trùng lặp hoặc bỏ sót hành vi đã được test
 
@@ -59,6 +59,7 @@ AI QA Agent là **trái tim** của hệ thống. Nó nhận dữ liệu đã đ
 
 **Lưu ý:**
 - Người dùng SẼ review và chỉnh sửa output này
+- AI đề xuất 1-5 rule độc lập cho mỗi method khi phù hợp; một method có thể có validation, business logic và side effect riêng
 - Đo `User Modification Rate` để đánh giá độ chính xác của AI
 - Rule sinh ra có `source = AI_GENERATED`, `status = PENDING_REVIEW`
 
@@ -466,23 +467,31 @@ public <T> T callLLMWithRetry(String prompt, Class<T> responseType) {
 - Temperature: 0.3 (giảm randomness)
 - Max tokens output: 4096
 
-### Anthropic Claude (alternative)
-- Model: `claude-sonnet-4-5`
-- Tương tự setting
+### Google Gemini
+- Provider `google` dùng endpoint Gemini và model mặc định `gemini-3.5-flash`.
+- Request kèm `response_format` và JSON schema theo từng prompt để giảm lỗi sai format.
 
 ### Cấu hình
 File `application.yml`:
 ```yaml
 llm:
-  provider: ${LLM_PROVIDER:mock}  # mock hoặc openai
+  provider: ${LLM_PROVIDER:mock}  # mock, openai hoặc google
   api-key: ${LLM_API_KEY:}
   model: ${LLM_MODEL:gpt-4o-mini}
   temperature: ${LLM_TEMPERATURE:0.3}
   max-tokens: ${LLM_MAX_TOKENS:4096}
   timeout-seconds: ${LLM_TIMEOUT_SECONDS:60}
   openai-url: ${LLM_OPENAI_URL:https://api.openai.com/v1/responses}
+  google-url: ${LLM_GOOGLE_URL:https://generativelanguage.googleapis.com/v1beta/interactions}
   max-retries: 2
+
+greytest:
+  ai-context-log-enabled: ${GREYTEST_AI_CONTEXT_LOG_ENABLED:false}
+  ai-context-log-console-enabled: ${GREYTEST_AI_CONTEXT_LOG_CONSOLE_ENABLED:false}
+  ai-context-log-path: ${GREYTEST_AI_CONTEXT_LOG_PATH:../log}
 ```
+
+Context/prompt/response log tắt mặc định vì có thể chứa source code của project upload; chỉ bật khi debug local.
 
 ## Stability — Đo độ ổn định
 

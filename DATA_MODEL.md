@@ -424,6 +424,7 @@ V14__add_test_generation_analysis_context.sql
 V15__add_parse_failure_stats_to_project.sql
 V16__add_auth_user_and_project_owner.sql
 V17__add_existing_test_context.sql
+V18__enforce_artifact_codes.sql
 ```
 
 > Cập nhật: bổ sung `V5` cho bảng `service_repository_relation` (bản đầu thiếu),

@@ -54,7 +54,7 @@
                      │
         ┌────────────▼────────────┐
         │      LLM Provider       │
-        │   OpenAI / Anthropic    │
+        │   OpenAI / Google       │
         └─────────────────────────┘
 ```
 
@@ -169,7 +169,7 @@ cùng transaction. Nếu analysis lỗi, database rollback và source trên file
 
 Bên cạnh các service trên, có một số module helper:
 
-- `LLMClient` — Wrapper gọi OpenAI/Claude API
+- `LLMClient` — Wrapper gọi Mock/OpenAI/Google Gemini API
 - `PromptManager` — Quản lý prompt template
 - `FileStorageService` — Quản lý lưu trữ file ZIP, JaCoCo XML
 - `GithubService` — Clone public GitHub repo

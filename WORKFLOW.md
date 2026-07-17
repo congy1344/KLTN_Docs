@@ -123,8 +123,10 @@
 
 1. **AI auto sinh BR**
    - User bấm "AI sinh Business Rules".
-   - GreyTest đọc Static Analysis Context, source method, annotation, relation và Existing Test Context nếu có.
+   - GreyTest chỉ gửi Service Method chưa có Business Rule, kèm Static Analysis Context, source method, annotation, relation và Existing Test Context nếu có.
+   - AI có thể sinh 1-5 rule độc lập cho một method (validation, business logic, side effect nếu phù hợp).
    - AI sinh danh sách Business Rule ở trạng thái `PENDING_REVIEW`.
+   - Nếu mọi Service Method đã có rule, hệ thống trả danh sách rỗng và UI thông báo không còn method cần sinh.
 
 2. **User nhập BR, AI review và đề xuất thêm**
    - User tự nhập hoặc import một vài Business Rule ban đầu.

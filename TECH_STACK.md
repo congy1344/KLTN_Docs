@@ -12,7 +12,7 @@
 | ORM | Spring Data JPA + Hibernate | Chuẩn Spring, ít boilerplate |
 | Database | PostgreSQL 15+ | Quan hệ rõ ràng, ổn định, miễn phí |
 | Code Analysis | JavaParser 3.x | Thư viện chuẩn cho phân tích Java AST |
-| LLM | OpenAI GPT-4o hoặc Claude Sonnet | API ổn định, chất lượng cao |
+| LLM | Mock local, OpenAI GPT-4o hoặc Google Gemini | Có mock để demo/test nhanh; provider thật cấu hình qua env |
 | API Doc | SpringDoc OpenAPI (Swagger) | Tự sinh doc từ code |
 | Build (BE) | Maven | Chuẩn Spring Boot |
 | Build (FE) | Vite | Nhanh, hiện đại |
@@ -230,6 +230,9 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-mock}
       LLM_API_KEY: ${LLM_API_KEY}
       LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      GREYTEST_AI_CONTEXT_LOG_ENABLED: ${GREYTEST_AI_CONTEXT_LOG_ENABLED:-false}
+      GREYTEST_AI_CONTEXT_LOG_CONSOLE_ENABLED: ${GREYTEST_AI_CONTEXT_LOG_CONSOLE_ENABLED:-false}
+      GREYTEST_AI_CONTEXT_LOG_PATH: /app/log
     depends_on:
       - postgres
 

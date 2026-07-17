@@ -1,70 +1,133 @@
-**1\. Phân định vai trò người dùng (Actors)**
+# Tài liệu phân tích yêu cầu GreyTest
+
+**1\. Tổng quan tài liệu**
+
+**1.1. Mục đích**
+
+Tài liệu này mô tả các yêu cầu của hệ thống GreyTest ở mức phân tích yêu cầu, làm căn cứ cho thiết kế, cài đặt, kiểm thử và đánh giá thực nghiệm trong đồ án tốt nghiệp.
+
+**1.2. Bối cảnh bài toán**
+
+GreyTest là hệ thống AI QA Agent theo hướng grey-box, hỗ trợ phân tích mã nguồn Java Spring Boot để sinh Business Rule, Test Plan, Test Case và Unit Test. Hệ thống không thay thế hoàn toàn kỹ sư QA hoặc lập trình viên, mà đóng vai trò trợ lý sinh/gợi ý tạo tác kiểm thử có sự kiểm duyệt của con người.
+
+**1.3. Phạm vi hệ thống**
+
+- Cho phép người dùng đưa mã nguồn Java Spring Boot vào hệ thống bằng file ZIP hoặc GitHub URL public.
+- Phân tích tĩnh mã nguồn production và test hiện có để tạo ngữ cảnh cho AI.
+- Hỗ trợ quy trình Human-in-the-Loop: Business Rule -> Test Plan -> Test Case -> Unit Test.
+- Cho phép truy vết tạo tác kiểm thử, upload báo cáo JaCoCo XML và xuất báo cáo JSON/Markdown.
+- Cung cấp xác thực, phân quyền cơ bản cho User và Admin.
+
+**1.4. Ngoài phạm vi**
+
+- Không hỗ trợ ngôn ngữ/framework ngoài Java Spring Boot.
+- Không tự động chạy build, test hoặc coverage trên server.
+- Không tự động commit, merge hoặc tạo pull request vào project gốc.
+- Không sinh integration test, end-to-end test, performance test hoặc security test.
+- Không hướng tới sản phẩm thương mại nhiều tenant, billing, SSO hoặc phân quyền team phức tạp.
+
+**1.5. Giả định và phụ thuộc**
+
+- Project đầu vào có cấu trúc phổ biến của Java Spring Boot, ưu tiên `src/main/java` và `src/test/java`.
+- Người dùng chịu trách nhiệm kiểm chứng lại Business Rule, Test Case và Unit Test do AI đề xuất.
+- Người dùng tự chạy test/coverage ở môi trường local rồi upload file `jacoco.xml`.
+- Chất lượng kết quả phụ thuộc vào chất lượng source code, context phân tích tĩnh, prompt và model LLM được cấu hình.
+
+**1.6. Thuật ngữ**
+
+| **Thuật ngữ** | **Ý nghĩa** |
+| ------------- | ----------- |
+| Grey-box | Cách tiếp cận kết hợp thông tin nội bộ từ source code với mục tiêu kiểm thử ở mức hành vi. |
+| HITL | Human-in-the-Loop, nghĩa là người dùng review/chỉnh sửa/phê duyệt kết quả AI trước khi đi tiếp. |
+| Business Rule | Luật nghiệp vụ hoặc điều kiện xử lý quan trọng được rút ra từ code hoặc do người dùng nhập. |
+| Test Plan | Ý tưởng/nhóm kiểm thử ở mức kế hoạch, được sinh từ Business Rule. |
+| Test Case | Kịch bản kiểm thử cụ thể có dữ liệu đầu vào, điều kiện và kết quả mong đợi. |
+| Unit Test | Mã kiểm thử tự động ở mức đơn vị, dùng JUnit 5 và Mockito. |
+| Traceability Matrix | Ma trận truy vết liên kết Business Rule -> Test Plan -> Test Case -> Unit Test. |
+| Manifest | Báo cáo JSON mô tả cấu trúc source code được trích xuất bởi static analysis. |
+
+**2\. Phân định vai trò người dùng (Actors)**
 
 Hệ thống GreyTest phục vụ 3 nhóm tác nhân chính:
 
 - **Người dùng (User / Lập trình viên / Kỹ sư QA):** Tải lên mã nguồn, trực tiếp tham gia vào quy trình Human-in-the-Loop (HITL) để thêm/sửa/xóa/duyệt các Luật nghiệp vụ, Kế hoạch kiểm thử, Kịch bản kiểm thử, xuất mã nguồn Unit Test và tải lên báo cáo độ bao phủ.
 - **Quản trị viên (Admin):** Quản lý người dùng, có quyền xem toàn bộ dự án trên hệ thống để phục vụ việc bảo trì và kiểm tra dữ liệu thực nghiệm.
-- **Hệ thống tự động (System / AI QA Agent):** Đóng vai trò là tác nhân chạy ngầm, thực hiện phân tích tĩnh (Static Analysis) bằng JavaParser và giao tiếp với các mô hình ngôn ngữ lớn (LLM) để sinh/gợi ý/phân tích các tạo tác kiểm thử (Test Artifacts).
+- **Hệ thống tự động (System / AI QA Agent):** Đóng vai trò là tác nhân chạy ngầm, thực hiện phân tích tĩnh và giao tiếp với mô hình ngôn ngữ lớn (LLM) để sinh/gợi ý/phân tích các tạo tác kiểm thử (Test Artifacts).
 
-**2\. Yêu cầu chức năng (Functional Requirements)**
+**3\. Yêu cầu chức năng (Functional Requirements)**
 
-**2.1. Phân hệ Quản lý Dự án & Phân tích Tĩnh (Static Analysis Engine)**
+Quy ước mức ưu tiên: **Must** là bắt buộc trong phạm vi đồ án; **Should** là nên có để hoàn thiện quy trình; **Could** là có thể bổ sung nếu còn thời gian.
 
-| **Mã YC** | **Tên chức năng**                              | **Mô tả chi tiết**                                                                                                                                                                                                                                                                      |
-| --------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **FR1.1** | **Nhập mã nguồn dự án**                        | Hỗ trợ upload mã nguồn qua file ZIP hoặc Clone từ GitHub URL. Hệ thống tự động xác thực định dạng Spring Boot qua pom.xml hoặc build.gradle. Gán quyền sở hữu (owner) cho User tải lên.                                                                                                 |
-| **FR1.2** | **Phân tích Tĩnh (Static Analysis)**           | Phân tích thư mục src/main/java bằng JavaParser (hỗ trợ từ Java 8 đến Java 21) để trích xuất 6 thành phần: (1) Danh sách Type (Class/Interface/Enum/Record), (2) Methods, (3) Relevant Annotations, (4) REST Endpoints, (5) Quan hệ Controller-Service, (6) Quan hệ Service-Repository. |
-| **FR1.3** | **Phân tích Best-effort**                      | Nếu gặp lỗi cú pháp tại một số file production, hệ thống thống kê số file lỗi (failedParseFiles) và bỏ qua chúng khỏi ngữ cảnh sinh test.                                                                                                                                               |
-| **FR1.4** | **Phân tích Unit Test có sẵn (Existing Test)** | Hệ thống quét thư mục src/test/java (nếu có) để nhận diện các file test cũ. Trích xuất metadata (class, method, imports, assertions, mocks) làm ngữ cảnh hỗ trợ AI tránh sinh trùng lặp và đề xuất cải thiện test cũ.                                                                   |
-| **FR1.5** | **Xuất và Đối chiếu Manifest**                 | Cho phép xuất báo cáo cấu trúc trích xuất tĩnh ra định dạng JSON (Manifest) và gọi API đối chiếu (Validate) với Ground Truth (đếm exact match, missing, unexpected).                                                                                                                    |
+**3.1. Phân hệ Quản lý Dự án & Phân tích Tĩnh**
 
-**2.2. Phân hệ Quản lý Luật nghiệp vụ (Business Rules - HITL)**
+| **Mã YC** | **Tên chức năng** | **Mô tả yêu cầu** | **Ưu tiên** | **Tiêu chí chấp nhận** |
+| --------- | ----------------- | ----------------- | ----------- | ---------------------- |
+| **FR1.1** | **Nhập mã nguồn dự án** | Hỗ trợ upload mã nguồn qua file ZIP hoặc clone từ GitHub URL public. Hệ thống kiểm tra project có dấu hiệu là Java Spring Boot và gán quyền sở hữu cho User tải lên. | Must | Với ZIP/GitHub URL hợp lệ, hệ thống tạo project mới và gán owner. Với project không hợp lệ, hệ thống trả lỗi rõ ràng và không tạo dữ liệu rác. |
+| **FR1.2** | **Phân tích tĩnh source code** | Hệ thống phân tích source production để trích xuất type, method, annotation, REST endpoint và quan hệ Controller-Service/Service-Repository. | Must | Sau khi phân tích thành công, project có dữ liệu class/method/endpoint/relation để dùng làm context cho các bước AI. |
+| **FR1.3** | **Phân tích best-effort** | Nếu một phần source code bị lỗi cú pháp, hệ thống ghi nhận file lỗi và tiếp tục phân tích phần còn lại khi còn source hợp lệ. | Must | File lỗi được thống kê; pipeline không dừng toàn bộ nếu vẫn còn file hợp lệ để phân tích. |
+| **FR1.4** | **Phân tích Unit Test có sẵn** | Hệ thống quét test hiện có để trích xuất metadata cơ bản và dùng làm ngữ cảnh tránh sinh trùng hoặc đề xuất cải thiện test cũ. | Should | Nếu có `src/test/java`, hệ thống lưu được test class, test method, import/assertion/mock ở mức metadata. Nếu không có test cũ, pipeline vẫn tiếp tục. |
+| **FR1.5** | **Xuất và đối chiếu Manifest** | Cho phép xuất báo cáo cấu trúc trích xuất tĩnh dạng JSON và đối chiếu với Ground Truth phục vụ đánh giá thực nghiệm. | Should | Người dùng xuất được Manifest JSON; API validate trả thống kê exact match, missing và unexpected khi có Ground Truth. |
 
-| **Mã YC** | **Tên chức năng**                   | **Mô tả chi tiết**                                                                                                                   |
-| --------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **FR2.1** | **AI tự động sinh Rule (Chế độ 1)** | Dựa trên code của Service method, AI tự động đề xuất các Luật nghiệp vụ (trọng tâm vào validation, side effect).                     |
-| **FR2.2** | **AI Review Rule (Chế độ 2)**       | Người dùng tự nhập Rule. AI sẽ phân tích và trả về nhận xét (Gợi ý sửa đổi nếu mơ hồ/sai method) và đề xuất thêm các Rule còn thiếu. |
-| **FR2.3** | **Tương tác HITL & Phê duyệt**      | Người dùng xem, Thêm/Sửa/Xóa các Rule. Bấm Phê duyệt (Approve) để chốt danh sách.                                                    |
+**3.2. Phân hệ Quản lý Luật nghiệp vụ (Business Rules - HITL)**
 
-**2.3. Phân hệ Test Plan & Test Case - HITL**
+| **Mã YC** | **Tên chức năng** | **Mô tả yêu cầu** | **Ưu tiên** | **Tiêu chí chấp nhận** |
+| --------- | ----------------- | ----------------- | ----------- | ---------------------- |
+| **FR2.1** | **AI tự động sinh Rule** | Dựa trên context của method/service, AI đề xuất Business Rule liên quan đến validation, điều kiện xử lý và side effect. | Must | Người dùng chọn method/phạm vi phù hợp và nhận được danh sách rule ở trạng thái chờ review. |
+| **FR2.2** | **AI review Rule người dùng nhập** | Người dùng nhập rule thủ công; AI nhận xét rule và đề xuất chỉnh sửa hoặc bổ sung rule còn thiếu nếu có tín hiệu từ source code. | Should | Hệ thống trả về nhận xét hoặc gợi ý bổ sung; rule gốc của người dùng không bị tự động ghi đè khi chưa xác nhận. |
+| **FR2.3** | **Tương tác HITL và phê duyệt** | Người dùng có thể xem, thêm, sửa, xóa và phê duyệt danh sách Business Rule. | Must | Chỉ Business Rule đã được phê duyệt mới được dùng để sinh Test Plan. |
 
-| **Mã YC** | **Tên chức năng**              | **Mô tả chi tiết**                                                                                                                                                                                                                     |
-| --------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **FR3.1** | **AI sinh Test Plan**          | Từ các Business Rule đã duyệt, AI sinh Test Plan thuộc 4 loại: HAPPY_PATH, BOUNDARY, EXCEPTION, EDGE. Người dùng duyệt.                                                                                                                |
-| **FR3.2** | **AI sinh Test Case chi tiết** | Sinh Test Case từ Test Plan đã duyệt. Đảm bảo đủ 8 trường: Test ID, Test Type, Description, Preconditions, Test Data, Expected Result, Priority và Trace Source.                                                                         |
-| **FR3.3** | **Tái tạo dữ liệu**            | Nếu người dùng yêu cầu AI sinh lại (Regenerate) ở một pha, hệ thống yêu cầu xác nhận rồi xóa dữ liệu ở các pha sau (Plan, Case, Unit Test) để tránh rác dữ liệu và đưa Project State về trạng thái tương ứng.                           |
+**3.3. Phân hệ Test Plan & Test Case - HITL**
 
-**2.4. Phân hệ Sinh Unit Test**
+| **Mã YC** | **Tên chức năng** | **Mô tả yêu cầu** | **Ưu tiên** | **Tiêu chí chấp nhận** |
+| --------- | ----------------- | ----------------- | ----------- | ---------------------- |
+| **FR3.1** | **AI sinh Test Plan** | Từ Business Rule đã duyệt, AI sinh Test Plan theo các nhóm phù hợp như happy path, boundary, exception và edge. | Must | Mỗi Test Plan được liên kết với Business Rule nguồn và có trạng thái chờ duyệt trước khi dùng để sinh Test Case. |
+| **FR3.2** | **AI sinh Test Case chi tiết** | Từ Test Plan đã duyệt, AI sinh Test Case có đủ thông tin cần thiết để người dùng review và làm đầu vào sinh Unit Test. | Must | Test Case có Test ID, Test Type, Description, Preconditions, Test Data, Expected Result, Priority và Trace Source. |
+| **FR3.3** | **Tái tạo dữ liệu** | Khi người dùng regenerate ở một pha, hệ thống yêu cầu xác nhận và xử lý dữ liệu các pha sau để tránh trạng thái không nhất quán. | Should | Regenerate rule/plan/case không để lại dữ liệu con mồ côi trái với project state hiện tại. |
 
-| **Mã YC** | **Tên chức năng**              | **Mô tả chi tiết**                                                                                                                                                                                                |
-| --------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **FR4.1** | **AI sinh mã Unit Test**       | Dựa trên Test Case, AI sinh code Java (JUnit 5 + Mockito). Kết quả được gán cờ generation_type: NEW_TEST (tạo mới), IMPROVE_EXISTING_TEST (sửa test cũ), hoặc SUPPLEMENT_EXISTING_TEST (thêm method vào test cũ). |
-| **FR4.2** | **Xuất mã nguồn (Export ZIP)** | Tự động đóng gói các file test sinh ra đúng theo cấu trúc package gốc (src/test/java/.../\*Test.java) và cho phép người dùng tải xuống.                                                                           |
+**3.4. Phân hệ Sinh Unit Test**
 
-**2.5. Phân hệ Traceability, Coverage & Báo cáo**
+| **Mã YC** | **Tên chức năng** | **Mô tả yêu cầu** | **Ưu tiên** | **Tiêu chí chấp nhận** |
+| --------- | ----------------- | ----------------- | ----------- | ---------------------- |
+| **FR4.1** | **AI sinh mã Unit Test** | Dựa trên Test Case đã duyệt, AI sinh mã Unit Test Java và phân loại kết quả là test mới, cải thiện test cũ hoặc bổ sung method vào test cũ. | Must | Unit Test được lưu kèm nội dung code, package/file path và loại sinh tương ứng. |
+| **FR4.2** | **Xuất mã nguồn Unit Test** | Hệ thống đóng gói các file test sinh ra theo cấu trúc thư mục phù hợp để người dùng tải về. | Must | Người dùng tải được ZIP chứa file test theo cấu trúc `src/test/java/.../*Test.java`. |
 
-| **Mã YC** | **Tên chức năng**                          | **Mô tả chi tiết**                                                                                                                                                                    |
-| --------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **FR5.1** | **Ma trận truy vết (Traceability Matrix)** | Dựng view ảo hiển thị chuỗi liên kết: Business Rule → Test Plan → Test Case → Unit Test, kèm Method liên quan khi có.                                                                 |
-| **FR5.2** | **Tích hợp JaCoCo & Gap Detection**        | Cho phép người dùng upload file jacoco.xml (sau khi chạy test ở máy cá nhân). Hệ thống tính Line/Branch Coverage và gọi AI đề xuất thêm Test Case cho những đoạn code có độ phủ thấp. |
-| **FR5.3** | **Xuất báo cáo JSON/Markdown**             | Xuất toàn bộ dữ liệu dự án ra định dạng JSON (cho máy đọc) hoặc Markdown (cho người đọc, trình bày dạng bảng biểu).                                                                   |
+**3.5. Phân hệ Traceability, Coverage & Báo cáo**
 
-**2.6. Phân hệ Xác thực & Phân quyền**
+| **Mã YC** | **Tên chức năng** | **Mô tả yêu cầu** | **Ưu tiên** | **Tiêu chí chấp nhận** |
+| --------- | ----------------- | ----------------- | ----------- | ---------------------- |
+| **FR5.1** | **Ma trận truy vết** | Hiển thị chuỗi liên kết Business Rule -> Test Plan -> Test Case -> Unit Test, kèm method liên quan khi có. | Must | Người dùng xem được liên kết hiện có và nhận biết phần còn thiếu trong chuỗi truy vết. |
+| **FR5.2** | **Upload coverage và phát hiện gap** | Người dùng upload file JaCoCo XML; hệ thống tính coverage và đề xuất bổ sung test cho vùng có độ phủ thấp khi có đủ dữ liệu. | Should | File JaCoCo hợp lệ được parse và lưu; hệ thống hiển thị line/branch coverage và gap nếu phát hiện được. |
+| **FR5.3** | **Xuất báo cáo JSON/Markdown** | Xuất dữ liệu dự án ở định dạng JSON cho máy đọc hoặc Markdown cho người đọc. | Should | Người dùng tải được báo cáo chứa analysis, rule, plan, case, unit test, traceability và coverage nếu có. |
 
-| **Mã YC** | **Tên chức năng**                  | **Mô tả chi tiết**                                                                                                                                     |
-| --------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **FR6.1** | **Đăng ký và đăng nhập**           | Cho phép người dùng đăng ký tài khoản, đăng nhập và lấy thông tin người dùng hiện tại. Mật khẩu phải được băm bằng BCrypt trước khi lưu.               |
-| **FR6.2** | **Phân quyền theo vai trò**        | Hỗ trợ 2 vai trò cơ bản: USER và ADMIN. USER chỉ thao tác với project do mình sở hữu; ADMIN có quyền xem toàn bộ project và hỗ trợ quản lý dữ liệu.    |
-| **FR6.3** | **Kiểm soát truy cập project/API** | Các API upload, analysis, generation, coverage và export phải kiểm tra người dùng hiện tại có quyền truy cập project trước khi xử lý yêu cầu.          |
+**3.6. Phân hệ Xác thực & Phân quyền**
 
-**3\. Yêu cầu phi chức năng (Non-Functional Requirements)**
+| **Mã YC** | **Tên chức năng** | **Mô tả yêu cầu** | **Ưu tiên** | **Tiêu chí chấp nhận** |
+| --------- | ----------------- | ----------------- | ----------- | ---------------------- |
+| **FR6.1** | **Đăng ký và đăng nhập** | Cho phép người dùng đăng ký tài khoản, đăng nhập và lấy thông tin người dùng hiện tại. | Must | Người dùng đăng nhập thành công với tài khoản hợp lệ; mật khẩu không lưu dạng plaintext. |
+| **FR6.2** | **Phân quyền theo vai trò** | Hỗ trợ hai vai trò cơ bản: USER và ADMIN. USER thao tác với project của mình; ADMIN có quyền xem toàn bộ project. | Must | USER không xem/sửa project của người khác; ADMIN truy cập được dữ liệu cần kiểm tra. |
+| **FR6.3** | **Kiểm soát truy cập project/API** | Các API liên quan đến project phải kiểm tra quyền truy cập trước khi xử lý yêu cầu. | Must | Request không có quyền bị từ chối; request hợp lệ tiếp tục xử lý đúng chức năng. |
 
-- **Hiệu năng & Bất đồng bộ:** Việc giao tiếp với LLM phải được xử lý bất đồng bộ (Async). Giao diện người dùng phải hiển thị trạng thái job (`PENDING`, `RUNNING`, `DONE`, `FAILED`) và trạng thái tạo tác chờ duyệt (`PENDING_REVIEW`). Hệ thống backend phải có cơ chế Retry (tối đa 2 lần) khi LLM trả về sai định dạng JSON.
-- **Kiểm soát chi phí:** Hệ thống phải đếm và lưu trữ số lượng Input Tokens và Output Tokens cho mỗi lần gọi API LLM (OpenAI/Anthropic) vào bảng experiment_metric để tính toán chi phí vận hành.
-- **Bảo mật & Tính toàn vẹn:** Mã nguồn người dùng tải lên dưới dạng ZIP/Clone phải được xử lý trong thư mục lưu trữ/tạm có kiểm soát và tự động dọn dẹp khi rollback do lỗi. Mật khẩu người dùng được băm bằng BCrypt; các API dự án phải kiểm tra quyền owner hoặc `ADMIN`.
-- **UX/UI:** Áp dụng mô hình State Management (TanStack Query) cho frontend để đảm bảo tính đồng bộ dữ liệu giao diện theo trạng thái của Project State Machine.
+**4\. Yêu cầu phi chức năng (Non-Functional Requirements)**
 
-**4\. Giới hạn của hệ thống**
+| **Mã NFR** | **Nhóm yêu cầu** | **Mô tả** | **Tiêu chí kiểm chứng** |
+| ---------- | ---------------- | --------- | ----------------------- |
+| **NFR1** | Hiệu năng & bất đồng bộ | Các tác vụ gọi LLM hoặc phân tích source có thể chạy bất đồng bộ để không khóa giao diện người dùng. | Người dùng thấy trạng thái xử lý như `PENDING`, `RUNNING`, `DONE`, `FAILED`; tác vụ lỗi không làm treo toàn bộ hệ thống. |
+| **NFR2** | Độ tin cậy khi dùng LLM | Hệ thống cần xử lý trường hợp LLM trả sai định dạng, không có text output hoặc sinh dữ liệu thiếu trường bắt buộc. | Lỗi LLM được ghi nhận và trả thông báo rõ; hệ thống có retry có giới hạn, không lưu kết quả sai schema làm dữ liệu chính thức. |
+| **NFR3** | Kiểm soát chi phí thực nghiệm | Mỗi lần gọi LLM cần lưu được thông tin model/provider và token/cost nếu provider trả về dữ liệu này. | Báo cáo thực nghiệm có thể thống kê số lần gọi LLM, token đầu vào/đầu ra và chi phí ước tính khi có dữ liệu. |
+| **NFR4** | Bảo mật & phân quyền | Dữ liệu project phải gắn với owner; mật khẩu không lưu plaintext; API project phải kiểm tra quyền trước khi xử lý. | User không truy cập được project của user khác; password trong database là hash; request thiếu/sai quyền trả lỗi phù hợp. |
+| **NFR5** | Tính toàn vẹn dữ liệu | Khi upload, parse, regenerate hoặc rollback lỗi, hệ thống không để lại trạng thái project mâu thuẫn. | Project state phản ánh đúng bước hiện tại; dữ liệu pha sau bị xóa/khóa khi pha trước được regenerate. |
+| **NFR6** | Khả dụng giao diện | Giao diện cần thể hiện rõ trạng thái dữ liệu, trạng thái review và lỗi để người dùng tiếp tục workflow. | Người dùng biết artifact nào đang chờ duyệt, đã duyệt, lỗi hoặc chưa được sinh. |
+
+**5\. Ràng buộc kỹ thuật**
+
+- Backend sử dụng Spring Boot; frontend sử dụng React/TypeScript theo kiến trúc hiện tại của dự án.
+- Static Analysis Engine sử dụng JavaParser và ưu tiên phân tích source Java 8-21.
+- Unit Test sinh ra hướng tới JUnit 5 và Mockito.
+- Coverage sử dụng file JaCoCo XML do người dùng upload.
+- Frontend có thể dùng TanStack Query để đồng bộ dữ liệu theo trạng thái project.
+- Provider LLM phải có khả năng cấu hình để chuyển đổi giữa mock, Google Gemini và OpenAI khi cần.
+
+**6\. Giới hạn của hệ thống**
 
 - **Giới hạn về phạm vi dự án đầu vào:** Hệ thống chỉ hướng tới dự án **Java Spring Boot** có cấu trúc phổ biến (`src/main/java`, `src/test/java`) và sử dụng Maven/Gradle. Các ngôn ngữ hoặc framework khác như Kotlin, Groovy, Quarkus, Micronaut, Node.js, .NET không thuộc phạm vi đề tài. Với dự án multi-module, hệ thống xử lý theo hướng best-effort và chỉ đảm bảo phân tích các module có cấu trúc source chuẩn.
 - **Giới hạn về phiên bản Java và khả năng parse:** Static Analysis Engine cấu hình JavaParser ở language level `JAVA_21`, phù hợp với source Java 8-21. Các cú pháp mới hơn Java 21, mã nguồn lỗi cú pháp, generated source hoặc cách viết quá đặc thù có thể không parse được. Khi gặp lỗi ở một số file production, hệ thống bỏ qua file đó, ghi nhận `failedParseFiles/failedParseFilePaths` và tiếp tục phân tích phần còn lại thay vì dừng toàn bộ pipeline.
@@ -82,9 +145,9 @@ Hệ thống GreyTest phục vụ 3 nhóm tác nhân chính:
 - **Giới hạn về xuất báo cáo:** Hệ thống chỉ xuất báo cáo ở định dạng JSON và Markdown. Không xuất PDF, Excel hoặc dashboard BI nâng cao để giữ phạm vi phù hợp với đồ án 2 sinh viên.
 - **Giới hạn thực nghiệm:** Việc đánh giá chỉ dự kiến thực hiện trên 3-4 dự án Java Spring Boot nhỏ và trung bình. Kết quả thực nghiệm phản ánh dataset, model LLM và cấu hình prompt tại thời điểm chạy, không khẳng định hệ thống hoạt động tốt tương đương trên mọi dự án enterprise lớn hoặc domain nghiệp vụ phức tạp.
 
-**5\. Bảng Use Case**
+**7\. Bảng Use Case**
 
-**5.1. Danh sách Use Case tổng quan**
+**7.1. Danh sách Use Case tổng quan**
 
 | **Mã UC** | **Tên Use Case** | **Actor chính** | **Tiền điều kiện** | **Kết quả sau khi hoàn tất** | **FR liên quan** |
 | --------- | ---------------- | --------------- | ------------------ | ----------------------------- | ---------------- |
@@ -101,7 +164,7 @@ Hệ thống GreyTest phục vụ 3 nhóm tác nhân chính:
 | **UC-11** | Xuất báo cáo dự án | User, Admin | Dự án đã có dữ liệu cần báo cáo | Báo cáo JSON hoặc Markdown được xuất để lưu trữ/trình bày | FR5.3 |
 | **UC-12** | Quản lý người dùng và dữ liệu hệ thống | Admin | Admin đã đăng nhập | Admin xem được toàn bộ project và hỗ trợ quản lý dữ liệu thực nghiệm | FR6.2, FR6.3 |
 
-**5.2. Luồng chính và ngoại lệ rút gọn**
+**7.2. Luồng chính và ngoại lệ rút gọn**
 
 | **Mã UC** | **Luồng chính** | **Ngoại lệ/Ghi chú** |
 | --------- | --------------- | -------------------- |
@@ -118,7 +181,7 @@ Hệ thống GreyTest phục vụ 3 nhóm tác nhân chính:
 | **UC-11** | User chọn định dạng JSON hoặc Markdown. Hệ thống xuất toàn bộ dữ liệu dự án theo định dạng đã chọn. | Chỉ hỗ trợ JSON/Markdown, không hỗ trợ PDF/Excel. |
 | **UC-12** | Admin đăng nhập, xem danh sách user/project và kiểm tra dữ liệu phục vụ bảo trì hoặc thực nghiệm. | Admin không thay thế bước review nghiệp vụ của owner project. |
 
-**5.3. Đặc tả Use Case chi tiết theo SRS**
+**7.3. Đặc tả Use Case chi tiết theo SRS**
 
 **UC-01. Đăng ký và đăng nhập**
 
@@ -462,3 +525,14 @@ Hệ thống GreyTest phục vụ 3 nhóm tác nhân chính:
 | --------------- | ------------------ |
 | E1 | User không có vai trò `ADMIN`: hệ thống từ chối truy cập. |
 | E2 | Dữ liệu project bị lỗi hoặc thiếu: hệ thống hiển thị trạng thái lỗi để Admin kiểm tra. |
+
+**8\. Ma trận truy vết yêu cầu**
+
+| **Nhóm yêu cầu** | **FR liên quan** | **Use Case liên quan** | **Tạo tác/Kết quả chính** |
+| ---------------- | ---------------- | ---------------------- | ------------------------- |
+| Nhập và phân tích project | FR1.1, FR1.2, FR1.3, FR1.4, FR1.5 | UC-02, UC-03, UC-04 | Project, Static Analysis Context, Existing Test Context, Manifest |
+| Business Rule HITL | FR2.1, FR2.2, FR2.3 | UC-05 | Business Rule đã review/phê duyệt |
+| Test Plan và Test Case | FR3.1, FR3.2, FR3.3 | UC-06, UC-07 | Test Plan, Test Case, trạng thái regenerate |
+| Sinh và xuất Unit Test | FR4.1, FR4.2 | UC-08 | Source code Unit Test, file ZIP xuất ra |
+| Traceability, coverage và báo cáo | FR5.1, FR5.2, FR5.3 | UC-09, UC-10, UC-11 | Traceability Matrix, Coverage Report, báo cáo JSON/Markdown |
+| Xác thực và phân quyền | FR6.1, FR6.2, FR6.3 | UC-01, UC-12 | Tài khoản, vai trò, kiểm soát truy cập project/API |
