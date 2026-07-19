@@ -17,9 +17,11 @@ auth_user (1) ──── (n) project (1) ──── (n) java_class
    │                              │
    │                              └── (n) business_rule
    │                                       │
-   │                                       └── (n) test_plan
-   │                                                 │
-   │                                                 └── (n) test_case
+   │                                       ├── (n) test_plan
+   │                                       │         │
+   │                                       │         └── (n) test_case
+   │                                       │
+   │                                       └── (n) test_plan_covered_rule
    │                                                          │
    │                                                          └── (1) unit_test
    │
@@ -246,6 +248,23 @@ CREATE INDEX idx_test_plan_project ON test_plan(project_id);
 CREATE INDEX idx_test_plan_rule ON test_plan(business_rule_id);
 ```
 
+### 9.1. `test_plan_covered_rule`
+Lưu các Business Rule được một Test Plan bao phủ. `test_plan.business_rule_id` vẫn là anchor rule để giữ API cũ,
+còn bảng này dùng cho traceability/requirement coverage khi một plan cấp method/feature cover nhiều rule.
+
+```sql
+CREATE TABLE test_plan_covered_rule (
+    id               BIGSERIAL PRIMARY KEY,
+    test_plan_id     BIGINT NOT NULL REFERENCES test_plan(id) ON DELETE CASCADE,
+    business_rule_id BIGINT NOT NULL REFERENCES business_rule(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX uq_test_plan_covered_rule
+    ON test_plan_covered_rule(test_plan_id, business_rule_id);
+CREATE INDEX idx_test_plan_covered_rule_plan ON test_plan_covered_rule(test_plan_id);
+CREATE INDEX idx_test_plan_covered_rule_rule ON test_plan_covered_rule(business_rule_id);
+```
+
 ### 10. `test_case`
 Lưu Test Case (8 trường).
 
@@ -373,7 +392,8 @@ SELECT
     ut.test_method_name AS unit_test_name,
     br.project_id      AS project_id
 FROM business_rule br
-LEFT JOIN test_plan tp ON tp.business_rule_id = br.id
+LEFT JOIN test_plan_covered_rule tpcr ON tpcr.business_rule_id = br.id
+LEFT JOIN test_plan tp ON tp.id = tpcr.test_plan_id
 LEFT JOIN test_case tc ON tc.test_plan_id = tp.id
 LEFT JOIN unit_test ut ON ut.test_case_id = tc.id;
 ```
@@ -425,6 +445,7 @@ V15__add_parse_failure_stats_to_project.sql
 V16__add_auth_user_and_project_owner.sql
 V17__add_existing_test_context.sql
 V18__enforce_artifact_codes.sql
+V19__add_test_plan_covered_rule.sql
 ```
 
 > Cập nhật: bổ sung `V5` cho bảng `service_repository_relation` (bản đầu thiếu),
@@ -434,6 +455,7 @@ V18__enforce_artifact_codes.sql
 > `V15` bổ sung thống kê parse lỗi để analysis có thể chạy best-effort trên project lớn/legacy.
 > `V16` bổ sung user đăng nhập, role và owner cho project.
 > `V17` bổ sung Existing Test Context và metadata cho unit test sinh mới/cải thiện.
+> `V19` bổ sung bảng `test_plan_covered_rule` để một Test Plan có thể cover nhiều Business Rule mà traceability vẫn chính xác.
 
 ## Lưu ý quan trọng
 
