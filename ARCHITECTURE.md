@@ -85,8 +85,7 @@ Tầng quan trọng nhất, chứa toàn bộ logic nghiệp vụ. Chia thành c
 #### ProjectService
 **Trách nhiệm:** Nhập source từ ZIP/GitHub, validate project và điều phối Static Analysis tự động.
 
-Sau khi tạo project ở trạng thái `UPLOADED`, service gắn owner là user hiện tại rồi gọi `AnalysisService.analyze()` ngay trong
-cùng transaction. Nếu analysis lỗi, database rollback và source trên filesystem được dọn dẹp.
+Sau khi tạo project, service chỉ lưu source và trạng thái `UPLOADED`. User bấm nút **Phân tích** trong danh sách project để gọi `AnalysisService.analyze()`; vì vậy upload không bị chặn bởi thời gian parse/LLM.
 
 #### AnalysisService
 **Trách nhiệm:** Phân tích source code Java Spring Boot bằng JavaParser

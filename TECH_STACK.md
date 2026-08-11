@@ -6,7 +6,7 @@
 |---|---|---|
 | Frontend | React 18 + TypeScript | UI phức tạp, ecosystem mạnh |
 | State Management | TanStack Query (React Query) | Đơn giản, đủ cho server state |
-| UI Library | TailwindCSS + shadcn/ui | Build UI nhanh, không cần thiết kế từ đầu |
+| UI Library | TailwindCSS + shadcn/ui + MUI X Tree View | Build UI nhanh và hiển thị cây source Java/test |
 | Backend | Spring Boot 3 + Java 17 | JavaParser chạy tự nhiên, phù hợp ngành KTPM |
 | Auth | Spring Security + BCrypt + JWT/session token | Đăng nhập và phân quyền USER/ADMIN ở mức vừa đủ cho đồ án |
 | ORM | Spring Data JPA + Hibernate | Chuẩn Spring, ít boilerplate |
@@ -31,7 +31,8 @@
   "@tanstack/react-query": "^5.x",
   "axios": "^1.x",
   "tailwindcss": "^3.x",
-  "lucide-react": "latest"
+  "lucide-react": "latest",
+  "@mui/x-tree-view": "^8.x"
 }
 ```
 

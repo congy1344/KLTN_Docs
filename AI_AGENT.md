@@ -209,6 +209,16 @@ AI QA Agent là **trái tim** của hệ thống. Nó nhận dữ liệu đã đ
 - Nếu đã có test class phù hợp, ưu tiên bổ sung test method hoặc cải thiện assertion/mocking thay vì tạo class trùng tên.
 - Output phải ghi rõ `generation_type`: `NEW_TEST`, `IMPROVE_EXISTING_TEST` hoặc `SUPPLEMENT_EXISTING_TEST`.
 
+### Coverage-guided Refinement
+
+Sau khi user upload JaCoCo XML và chủ động bắt đầu vòng mới:
+
+- Context chỉ chứa method có gap, dòng/nhánh bị miss, artifact đã approve và test hiện có.
+- AI sinh thêm Test Case, không sinh lại hoặc xóa artifact vòng trước.
+- Hệ thống tự sinh Unit Test chỉ cho Test Case vừa bổ sung.
+- Unit Test của vòng này luôn được đánh dấu `SUPPLEMENT_EXISTING_TEST`.
+- User vẫn chạy test và JaCoCo trong project gốc; GreyTest không thực thi source không tin cậy trên server.
+
 ## Prompt Templates
 
 Đặt tại `backend/src/main/resources/prompts/`.
@@ -450,6 +460,13 @@ public <T> T callLLMWithRetry(String prompt, Class<T> responseType) {
     throw new IllegalStateException("Should not reach here");
 }
 ```
+
+### Ngôn ngữ output
+
+- Frontend gửi ngôn ngữ hệ thống qua header `Accept-Language` (`vi` hoặc `en`).
+- Mọi trường natural-language do AI sinh phải theo ngôn ngữ này.
+- Khi dùng tiếng Việt, giữ nguyên các thuật ngữ IT phổ biến như API, endpoint, controller, service, repository, method, class, source code, Test Plan, Test Case, Unit Test, mock, assertion, branch và coverage.
+- Không dịch JSON key, enum value, identifier, code hoặc file path để tránh làm hỏng schema và source code.
 
 ### Token Counting
 - Đếm input tokens trước khi gửi

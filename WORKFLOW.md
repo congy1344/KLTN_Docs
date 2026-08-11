@@ -6,6 +6,7 @@
 0. User đăng nhập
          ↓
 1. User upload ZIP / nhập GitHub URL
+2. Project được lưu ở trạng thái `UPLOADED`; User bấm **Phân tích** trong danh sách project
          ↓
 2. Static Analysis (JavaParser trích xuất cấu trúc code)
          ↓
@@ -62,7 +63,7 @@
 - Nếu là GitHub URL: dùng JGit để clone về thư mục tạm
 - Validate đây có phải Spring Boot project (kiểm tra `pom.xml` hoặc `build.gradle`)
 - Tạo record `Project` trong database với status = `UPLOADED` và owner là user hiện tại
-- Ngay lập tức gọi Static Analysis trước khi trả response cho user
+- Chưa gọi Static Analysis trong request upload; trả response với status `UPLOADED`
 - Nếu analysis thất bại hoàn toàn: rollback record project, xóa source đã lưu và trả lỗi `ANALYSIS_ERROR`
 - Nếu chỉ một số file production không parse được: bỏ qua các file đó, lưu `failedParseFilePaths`, vẫn phân tích các file còn lại
 
@@ -72,10 +73,10 @@
 
 ### Bước 2: Static Analysis
 
-**Trigger:** Tự động, đồng bộ trong request upload/clone sau khi bước 1 validate thành công
+**Trigger:** User bấm nút **Phân tích** sau khi upload/clone thành công
 
 **Hành động:**
-- `AnalysisService.analyze(projectId)` được gọi
+- `AnalysisService.analyze(projectId)` được gọi từ nút phân tích; upload/clone không tự gọi bước này
 - Sử dụng JavaParser quét toàn bộ file `.java`
 - Parser cấu hình language level `JAVA_21`, hướng tới source Java 8-21
 - Parse production source trong các source root `src/main/java` (hỗ trợ multi-module) để tạo Static Analysis Context chính
@@ -95,7 +96,7 @@
 - Trả thêm `existingTestFiles` để UI thông báo số test có sẵn đã được phát hiện và sẽ được dùng làm context cải thiện test
 
 **Endpoint:**
-- `POST /api/projects/{id}/analyze` — Chỉ dùng khi muốn re-analyze
+- `POST /api/projects/{id}/analyze` — Phân tích project `UPLOADED` hoặc phân tích lại
 - `GET /api/projects/{id}/analysis` — Xem kết quả
 - `GET /api/projects/{id}/analysis/manifest` — Export manifest JSON deterministic
 - `POST /api/projects/{id}/analysis/manifest/validate` — So sánh ground truth, trả missing/unexpected
@@ -250,8 +251,13 @@ Tương tự, user có thể sửa/thêm/xóa Test Case.
 - `CoverageService.detectCoverageGap(projectId)`
 - Tìm method có line coverage < 80% hoặc branch coverage < 70%
 - Lấy code những đoạn chưa cover
-- Gửi cho LLM kèm prompt yêu cầu sinh thêm test case
-- Hiển thị đề xuất cho user, user review và approve
+- Hiển thị gap và đề xuất deterministic để user quyết định có bắt đầu vòng tiếp theo
+- Khi user nhấn **Bắt đầu vòng N**:
+  - AI chỉ sinh Test Case bổ sung cho gap, không xóa Test Case vòng trước
+  - Nút bấm là xác nhận Human-in-the-Loop nên Test Case bổ sung được approve
+  - AI tự sinh Unit Test tương ứng với `generation_type = SUPPLEMENT_EXISTING_TEST`
+  - User copy hoặc tải ZIP, chạy lại local rồi upload JaCoCo XML của vòng mới
+- Lưu lịch sử report để so sánh coverage giữa hai vòng
 
 ### Bước 14: Xuất báo cáo
 
